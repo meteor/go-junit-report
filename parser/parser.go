@@ -44,6 +44,7 @@ var (
 	regexCoverage = regexp.MustCompile(`^coverage:\s+(\d+\.\d+)%\s+of\s+statements(?:\sin\s.+)?$`)
 	regexResult   = regexp.MustCompile(`^(ok|FAIL)\s+([^ ]+)\s+(?:(\d+\.\d+)s|(\[\w+ failed]))(?:\s+coverage:\s+(\d+\.\d+)%\sof\sstatements(?:\sin\s.+)?)?$`)
 	regexOutput   = regexp.MustCompile(`(    )*\t(.*)`)
+	regexLogrus   = regexp.MustCompile(`^time=`)
 	regexSummary  = regexp.MustCompile(`^(PASS|FAIL|SKIP)$`)
 )
 
@@ -170,6 +171,12 @@ func Parse(r io.Reader, pkgName string) (*Report, error) {
 				continue
 			}
 			test.Output = append(test.Output, matches[2])
+		} else if capturedPackage == "" && regexLogrus.MatchString(line) {
+			test := findTest(tests, cur)
+			if test == nil {
+				continue
+			}
+			test.Output = append(test.Output, line)
 		} else if strings.HasPrefix(line, "# ") {
 			// indicates a capture of build output of a package. set the current build package.
 			capturedPackage = line[2:]
